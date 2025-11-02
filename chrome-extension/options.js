@@ -121,37 +121,78 @@ function initOptions() {
  * charge les données depuis chrome.storage et remplit le formulaire
  */
 function loadFormData() {
-	chrome.storage.sync.get(["login", "code", "encryptKey"], function (items) {
-		if (items.login) {
-			document.getElementById("login").value = items.login;
+	chrome.storage.sync.get(
+		["login", "code", "encryptKey"],
+		async function (items) {
+			try {
+				if (items.encryptKey) {
+					document.getElementById("encryptKey").value =
+						items.encryptKey;
+					var cryptoKey = await deriveKeyFromSecret(items.encryptKey);
+				} else {
+					return; // pas de clé, pas de déchiffrement
+				}
+
+				if (items.login) {
+					document.getElementById("login").value = await decryptValue(
+						items.login,
+						cryptoKey
+					);
+				}
+				if (items.code) {
+					document.getElementById("code").value = await decryptValue(
+						items.code,
+						cryptoKey
+					);
+				}
+			} catch (e) {
+				console.log(
+					"Les données ne sont pas chiffrées, on les utilise telles quelles."
+				);
+				// si le déchiffrement échoue, c'est probablement que les données sont en clair
+				if (items.login) {
+					document.getElementById("login").value = items.login;
+				}
+				if (items.code) {
+					document.getElementById("code").value = items.code;
+				}
+			}
 		}
-		if (items.code) {
-			document.getElementById("code").value = items.code;
-		}
-		if (items.encryptKey) {
-			document.getElementById("encryptKey").value = items.encryptKey;
-		}
-	});
+	);
 }
+
+// ATTENTION: Si vous utilisez les données 'login' ou 'code' dans d'autres
+// parties de l'extension, vous devrez implémenter la même logique de
+// déchiffrement en utilisant la clé 'encryptKey' et la fonction decryptValue.
 
 /**
  * sauvegarde les données du formulaire dans chrome.storage
  */
-function saveFormData(e) {
+async function saveFormData(e) {
 	e.preventDefault();
 
 	var login = document.getElementById("login").value;
 	var code = document.getElementById("code").value;
 	var encryptKey = document.getElementById("encryptKey").value;
 
+	if (!login || !code || !encryptKey) {
+		console.log("Veuillez remplir tous les champs.");
+		return;
+	}
+
+	// chiffrer le login et le code
+	var cryptoKey = await deriveKeyFromSecret(encryptKey);
+	var encryptedLogin = await encryptValue(login, cryptoKey);
+	var encryptedCode = await encryptValue(code, cryptoKey);
+
 	chrome.storage.sync.set(
 		{
-			login: login,
-			code: code,
-			encryptKey: encryptKey,
+			login: encryptedLogin,
+			code: encryptedCode,
+			encryptKey: encryptKey, // la clé reste en clair
 		},
 		function () {
-			console.log("Données sauvegardées.");
+			console.log("Données chiffrées et sauvegardées.");
 		}
 	);
 }
@@ -169,8 +210,41 @@ async function deriveKeyFromSecret(secret) {
 
 	// on importe cette clé pour AES-CBC
 	return crypto.subtle.importKey("raw", hash, { name: "AES-CBC" }, false, [
+		"encrypt",
 		"decrypt",
 	]);
+}
+
+/**
+ * chiffre une valeur pour la stocker
+ * le format de sortie est : base64( iv(16) + ciphertext )
+ */
+async function encryptValue(str, cryptoKey) {
+	// 1. string -> bytes
+	var enc = new TextEncoder();
+	var plainBytes = enc.encode(str);
+
+	// 2. générer un IV aléatoire
+	var iv = crypto.getRandomValues(new Uint8Array(16));
+
+	// 3. chiffrer
+	var encrypted = await crypto.subtle.encrypt(
+		{
+			name: "AES-CBC",
+			iv: iv,
+		},
+		cryptoKey,
+		plainBytes
+	);
+
+	// 4. concaténer IV + ciphertext
+	var resultBytes = new Uint8Array(iv.length + encrypted.byteLength);
+	resultBytes.set(iv, 0);
+	resultBytes.set(new Uint8Array(encrypted), iv.length);
+
+	// 5. bytes -> base64
+	var base64 = btoa(String.fromCharCode.apply(null, resultBytes));
+	return base64;
 }
 
 /**
