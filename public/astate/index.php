@@ -37,8 +37,10 @@ if ($USE_HEADER_CHECK) {
 
 // 4. contrôle du code envoyé (facultatif)
 if ($USE_CODE_CHECK) {
-    $code_recu = $_POST['code'] ?? $_GET['code'] ?? '';
-    if ($code_recu !== $EXPECTED_PASSWORD) {
+    $code_recu_chiffre = $_POST['code'] ?? $_GET['code'] ?? '';
+    $code_recu_clair = dechiffrer_valeur($code_recu_chiffre, $ENCRYPT_KEY, $CIPHER);
+
+    if ($code_recu_clair !== $EXPECTED_PASSWORD) {
         http_response_code(404);
         exit;
     }
@@ -54,7 +56,20 @@ $donnees = [
 ];
 
 
-// 6. fonction de chiffrement
+// 6. fonctions de chiffrement/déchiffrement
+function dechiffrer_valeur(string $base64, string $key, string $cipher): string|false
+{
+    // ⚠️ même dérivation que côté JS : SHA-256 sur la clé texte
+    $realKey = hash('sha256', $key, true); // 32 octets
+
+    $data = base64_decode($base64);
+    $ivlen = openssl_cipher_iv_length($cipher);
+    $iv = substr($data, 0, $ivlen);
+    $crypt = substr($data, $ivlen);
+
+    return openssl_decrypt($crypt, $cipher, $realKey, OPENSSL_RAW_DATA, $iv);
+}
+
 function chiffrer_valeur(string $valeur, string $key, string $cipher): string
 {
     // ⚠️ même dérivation que côté JS : SHA-256 sur la clé texte
