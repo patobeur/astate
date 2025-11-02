@@ -35,19 +35,25 @@ if ($USE_HEADER_CHECK) {
 }
 
 
-// 4. contrôle du code envoyé (facultatif)
-if ($USE_CODE_CHECK) {
-    $code_recu_chiffre = $_POST['code'] ?? $_GET['code'] ?? '';
-    $code_recu_clair = dechiffrer_valeur($code_recu_chiffre, $ENCRYPT_KEY, $CIPHER);
+// 4. récupération des paramètres
+$password = $_POST['password'] ?? '';
+$code_chiffre = $_POST['code'] ?? '';
 
-    if ($code_recu_clair !== $EXPECTED_PASSWORD) {
-        http_response_code(404);
-        exit;
-    }
+if (empty($password) || empty($code_chiffre)) {
+	http_response_code(400); // Bad Request
+	exit;
 }
 
+// 5. Authentification : on déchiffre le code avec le mot de passe
+// et on le compare à une valeur attendue.
+$code_clair = dechiffrer_valeur($code_chiffre, $password, $CIPHER);
 
-// 5. données à envoyer
+if ($code_clair !== $EXPECTED_PASSWORD) {
+    http_response_code(403); // Forbidden
+    exit;
+}
+
+// 6. données à envoyer (uniquement si l'authentification a réussi)
 $donnees = [
     "user"    => "toto",
     "role"    => "admin",
@@ -87,7 +93,7 @@ function chiffrer_valeur(string $valeur, string $key, string $cipher): string
 // 7. on chiffre chaque valeur
 $donnees_chiffrees = [];
 foreach ($donnees as $k => $v) {
-    $donnees_chiffrees[$k] = chiffrer_valeur((string)$v, $ENCRYPT_KEY, $CIPHER);
+    $donnees_chiffrees[$k] = chiffrer_valeur((string)$v, $password, $CIPHER);
 }
 
 
