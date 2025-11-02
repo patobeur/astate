@@ -20,5 +20,5 @@
 		"service_worker": "background.js"
 	},
 	"permissions": ["storage"],
-	"host_permissions": ["https://astate.pat/astate/*"]
+	"host_permissions": ["http://astate.pat/astate/*"]
 }

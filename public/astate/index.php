@@ -50,7 +50,7 @@ $donnees = [
     "user"    => "toto",
     "role"    => "admin",
     "expires" => date('Y-m-d H:i:s', time() + 3600),
-    "json" => json_encode(array('test' => "ok"),
+    "json" => json_encode(array("test" => "ok"))
 ];
 
 
