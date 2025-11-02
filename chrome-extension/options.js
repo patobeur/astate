@@ -57,9 +57,10 @@ function initOptions() {
 			jsonResult.textContent = "Chargement...";
 
 			chrome.storage.sync.get(
-				["login", "code", "encryptKey"],
+				["login", "code"],
 				function (items) {
-					if (!items.code || !items.login || !items.encryptKey) {
+					var password = document.getElementById("password").value;
+					if (!items.code || !items.login || !password) {
 						jsonResult.textContent =
 							"Veuillez remplir tous les champs du formulaire de compte.";
 						return;
@@ -68,6 +69,7 @@ function initOptions() {
 					var formData = new FormData();
 					formData.append("code", items.code);
 					formData.append("login", items.login);
+					formData.append("password", password);
 
 					fetch(APPURL, {
 						method: "POST",
@@ -86,7 +88,7 @@ function initOptions() {
 							// ici data = { user: "base64...", role: "base64...", ... }
 
 							var cryptoKey = await deriveKeyFromSecret(
-								items.encryptKey
+								password
 							);
 
 							var dechiffre = {};
@@ -122,14 +124,19 @@ function initOptions() {
  */
 function loadFormData() {
 	chrome.storage.sync.get(
-		["login", "code", "encryptKey"],
+		["login", "code"],
 		async function (items) {
 			try {
-				if (items.encryptKey) {
-					document.getElementById("encryptKey").value = items.encryptKey;
-					var cryptoKey = await deriveKeyFromSecret(items.encryptKey);
+				var password = document.getElementById("password").value;
+				if (password) {
+					var cryptoKey = await deriveKeyFromSecret(password);
 				} else {
-					return; // pas de clé, pas de déchiffrement
+					// s'il n'y a pas de mot de passe entré, on ne peut rien déchiffrer
+					// on remplit juste le login qui est en clair
+					if (items.login) {
+						document.getElementById("login").value = items.login;
+					}
+					return;
 				}
 
 				if (items.login) {
@@ -167,22 +174,21 @@ async function saveFormData(e) {
 
 	var login = document.getElementById("login").value;
 	var code = document.getElementById("code").value;
-	var encryptKey = document.getElementById("encryptKey").value;
+	var password = document.getElementById("password").value;
 
-	if (!login || !code || !encryptKey) {
+	if (!login || !code || !password) {
 		console.log("Veuillez remplir tous les champs.");
 		return;
 	}
 
 	// chiffrer le code
-	var cryptoKey = await deriveKeyFromSecret(encryptKey);
+	var cryptoKey = await deriveKeyFromSecret(password);
 	var encryptedCode = await encryptValue(code, cryptoKey);
 
 	chrome.storage.sync.set(
 		{
 			login: login, // le login reste en clair
 			code: encryptedCode,
-			encryptKey: encryptKey, // la clé reste en clair
 		},
 		function () {
 			console.log("Données chiffrées et sauvegardées.");
