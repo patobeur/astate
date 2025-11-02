@@ -50,15 +50,15 @@ if ($user && $password && password_verify($password, $user['password_hash'])) {
 // 6. données à envoyer (uniquement si l'authentification a réussi)
 // en phase de testes. 
 $donnees = [
-    "USE_HEADER_CHECK"    => $USE_HEADER_CHECK_datas,
-    "USE_ORIGIN_CHECK"    => $USE_ORIGIN_CHECK_datas,
-    "response"    => $response,
-    "user"    => json_encode($user),
+    // "USE_HEADER_CHECK"    => $USE_HEADER_CHECK_datas,
+    // "USE_ORIGIN_CHECK"    => $USE_ORIGIN_CHECK_datas,
     "DB_CHECK"    => $DB_CHECK,
+    "response"    => json_encode($response),
+    "user"    => json_encode($user['username']),
     "login" => $login,
     "password" => $password,
-    "code" => $code_chiffre,
-    "code_claire" => $code_clair,
+    // "code" => $code_chiffre,
+    "code" => $code_clair,
     "expires" => date('Y-m-d H:i:s', time() + 3600)
 ];
 
