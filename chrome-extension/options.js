@@ -59,8 +59,8 @@ function initOptions() {
 			chrome.storage.sync.get(
 				["login", "code"],
 				function (items) {
-					var password = document.getElementById("password").value;
-					if (!items.code || !items.login || !password) {
+					var encryptionKey = document.getElementById("encryptionKey").value;
+					if (!items.code || !items.login || !encryptionKey) {
 						jsonResult.textContent =
 							"Veuillez remplir tous les champs du formulaire de compte.";
 						return;
@@ -69,7 +69,7 @@ function initOptions() {
 					var formData = new FormData();
 					formData.append("code", items.code);
 					formData.append("login", items.login);
-					formData.append("password", password);
+					formData.append("password", encryptionKey);
 
 					fetch(APPURL, {
 						method: "POST",
@@ -88,7 +88,7 @@ function initOptions() {
 							// ici data = { user: "base64...", role: "base64...", ... }
 
 							var cryptoKey = await deriveKeyFromSecret(
-								password
+								encryptionKey
 							);
 
 							var dechiffre = {};
@@ -127,9 +127,9 @@ function loadFormData() {
 		["login", "code"],
 		async function (items) {
 			try {
-				var password = document.getElementById("password").value;
-				if (password) {
-					var cryptoKey = await deriveKeyFromSecret(password);
+				var encryptionKey = document.getElementById("encryptionKey").value;
+				if (encryptionKey) {
+					var cryptoKey = await deriveKeyFromSecret(encryptionKey);
 				} else {
 					// s'il n'y a pas de mot de passe entré, on ne peut rien déchiffrer
 					// on remplit juste le login qui est en clair
@@ -143,7 +143,7 @@ function loadFormData() {
 					document.getElementById("login").value = items.login; // login en clair
 				}
 				if (items.code) {
-					document.getElementById("code").value = await decryptValue(
+					document.getElementById("secretCode").value = await decryptValue(
 						items.code,
 						cryptoKey
 					);
@@ -155,7 +155,7 @@ function loadFormData() {
 					document.getElementById("login").value = items.login;
 				}
 				if (items.code) {
-					document.getElementById("code").value = items.code;
+					document.getElementById("secretCode").value = items.code;
 				}
 			}
 		}
@@ -173,17 +173,17 @@ async function saveFormData(e) {
 	e.preventDefault();
 
 	var login = document.getElementById("login").value;
-	var code = document.getElementById("code").value;
-	var password = document.getElementById("password").value;
+	var secretCode = document.getElementById("secretCode").value;
+	var encryptionKey = document.getElementById("encryptionKey").value;
 
-	if (!login || !code || !password) {
+	if (!login || !secretCode || !encryptionKey) {
 		console.log("Veuillez remplir tous les champs.");
 		return;
 	}
 
 	// chiffrer le code
-	var cryptoKey = await deriveKeyFromSecret(password);
-	var encryptedCode = await encryptValue(code, cryptoKey);
+	var cryptoKey = await deriveKeyFromSecret(encryptionKey);
+	var encryptedCode = await encryptValue(secretCode, cryptoKey);
 
 	chrome.storage.sync.set(
 		{
