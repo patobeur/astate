@@ -5,7 +5,7 @@
 USE asate_database;
 
 -- créer la table users
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS ast_users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,

@@ -1,3 +1,4 @@
 private_astate/config.php
 chrome-extension/manifest.json
 chrome-extension/config.js
+public/astate/hash.php
