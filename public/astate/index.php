@@ -10,11 +10,6 @@ include("../../private_astate/checks.php");
 // et on le compare à une valeur attendue.
 $code_clair = dechiffrer_valeur($code_chiffre, $password, CIPHER);
 
-// if ($code_clair !== $EXPECTED_PASSWORD) {
-//     http_response_code(403); // Forbidden
-//     exit;
-// }
-
 
 $DB_CHECK = false;
 // 5. Connexion à la base de données
@@ -28,9 +23,6 @@ try {
     $pdo = new PDO($dsn, DB_USER, DB_PASSWORD, $options);
     $DB_CHECK = true;
 } catch (\PDOException $e) {
-    // Log l'erreur réelle côté serveur si possible, mais ne l'exposez pas au client
-    // error_log($e->getMessage()); 
-    // send_json_error(500, 'Internal Server Error: Database connection failed.');
     http_response_code(404); // Bad Request
     exit;
 }
@@ -43,7 +35,6 @@ try {
     $stmt->execute([$login]);
     $user = $stmt->fetch();
 } catch (\PDOException $e) {
-    // send_json_error(500, 'Internal Server Error: Error querying the database.');
     http_response_code(404); // Bad Request
     exit;
 }
