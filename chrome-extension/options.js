@@ -56,65 +56,53 @@ function initOptions() {
 		btnFetch.addEventListener("click", function () {
 			jsonResult.textContent = "Chargement...";
 
-			chrome.storage.sync.get(
-				["login", "code"],
-				function (items) {
-					var password = document.getElementById("password").value;
-					if (!items.code || !items.login || !password) {
-						jsonResult.textContent =
-							"Veuillez remplir tous les champs du formulaire de compte.";
-						return;
-					}
-
-					var formData = new FormData();
-					formData.append("code", items.code);
-					formData.append("login", items.login);
-					formData.append("password", password);
-
-					fetch(APPURL, {
-						method: "POST",
-						body: formData,
-						headers: {
-							"X-Addon-Key": EXPECTED_HEADER, // même valeur que dans le PHP
-						},
-					})
-						.then(function (res) {
-							if (!res.ok) {
-								throw new Error("Erreur HTTP : " + res.status);
-							}
-							return res.json();
-						})
-						.then(async function (data) {
-							// ici data = { user: "base64...", role: "base64...", ... }
-
-							var cryptoKey = await deriveKeyFromSecret(
-								password
-							);
-
-							var dechiffre = {};
-							for (var k in data) {
-								if (data.hasOwnProperty(k)) {
-									dechiffre[k] = await decryptValue(
-										data[k],
-										cryptoKey
-									);
-								}
-							}
-
-							// afficher le résultat clair
-							jsonResult.textContent = JSON.stringify(
-								dechiffre,
-								null,
-								2
-							);
-						})
-						.catch(function (err) {
-							jsonResult.textContent =
-								"Erreur json : " + err.name + " - " + err.message;
-							console.error(err);
-						});
+			chrome.storage.sync.get(["login", "code"], function (items) {
+				var encryptionKey = document.getElementById("encryptionKey").value;
+				if (!items.code || !items.login || !encryptionKey) {
+					jsonResult.textContent =
+						"Veuillez remplir tous les champs du formulaire de compte.";
+					return;
 				}
-			);
+
+				var formData = new FormData();
+				formData.append("code", items.code);
+				formData.append("login", items.login);
+				formData.append("password", encryptionKey);
+
+				fetch(APPURL, {
+					method: "POST",
+					body: formData,
+					headers: {
+						"X-Addon-Key": EXPECTED_HEADER, // même valeur que dans le PHP
+					},
+				})
+					.then(function (res) {
+						if (!res.ok) {
+							throw new Error("Erreur HTTP : " + res.status);
+						}
+						return res.json();
+					})
+					.then(async function (data) {
+						// ici data = { user: "base64...", role: "base64...", ... }
+
+						var cryptoKey = await deriveKeyFromSecret(encryptionKey);
+
+						var dechiffre = {};
+						for (var k in data) {
+							if (data.hasOwnProperty(k)) {
+								dechiffre[k] = await decryptValue(data[k], cryptoKey);
+							}
+						}
+
+						// afficher le résultat clair
+						jsonResult.textContent = JSON.stringify(dechiffre, null, 2);
+					})
+					.catch(function (err) {
+						jsonResult.textContent =
+							"Erreur json : " + err.name + " - " + err.message;
+						console.error(err);
+					});
+			});
 		});
 	}
 }
@@ -123,43 +111,40 @@ function initOptions() {
  * charge les données depuis chrome.storage et remplit le formulaire
  */
 function loadFormData() {
-	chrome.storage.sync.get(
-		["login", "code"],
-		async function (items) {
-			try {
-				var password = document.getElementById("password").value;
-				if (password) {
-					var cryptoKey = await deriveKeyFromSecret(password);
-				} else {
-					// s'il n'y a pas de mot de passe entré, on ne peut rien déchiffrer
-					// on remplit juste le login qui est en clair
-					if (items.login) {
-						document.getElementById("login").value = items.login;
-					}
-					return;
-				}
-
-				if (items.login) {
-					document.getElementById("login").value = items.login; // login en clair
-				}
-				if (items.code) {
-					document.getElementById("code").value = await decryptValue(
-						items.code,
-						cryptoKey
-					);
-				}
-			} catch (e) {
-				console.log("Le code n'est pas chiffré, on l'utilise tel quel.");
-				// si le déchiffrement échoue, c'est probablement que le code est en clair
+	chrome.storage.sync.get(["login", "code"], async function (items) {
+		try {
+			var encryptionKey = document.getElementById("encryptionKey").value;
+			if (encryptionKey) {
+				var cryptoKey = await deriveKeyFromSecret(encryptionKey);
+			} else {
+				// s'il n'y a pas de mot de passe entré, on ne peut rien déchiffrer
+				// on remplit juste le login qui est en clair
 				if (items.login) {
 					document.getElementById("login").value = items.login;
 				}
-				if (items.code) {
-					document.getElementById("code").value = items.code;
-				}
+				return;
+			}
+
+			if (items.login) {
+				document.getElementById("login").value = items.login; // login en clair
+			}
+			if (items.code) {
+				document.getElementById("secretCode").value = await decryptValue(
+					items.code,
+					cryptoKey
+				);
+			}
+		} catch (e) {
+			console.log("Le code n'est pas chiffré, on l'utilise tel quel.");
+			// si le déchiffrement échoue, c'est probablement que le code est en clair
+			if (items.login) {
+				document.getElementById("login").value = items.login;
+			}
+			if (items.code) {
+				document.getElementById("secretCode").value = items.code;
 			}
 		}
-	);
+	});
 }
 
 // ATTENTION: Si vous utilisez les données 'login' ou 'code' dans d'autres
@@ -173,17 +158,17 @@ async function saveFormData(e) {
 	e.preventDefault();
 
 	var login = document.getElementById("login").value;
-	var code = document.getElementById("code").value;
-	var password = document.getElementById("password").value;
+	var secretCode = document.getElementById("secretCode").value;
+	var encryptionKey = document.getElementById("encryptionKey").value;
 
-	if (!login || !code || !password) {
+	if (!login || !secretCode || !encryptionKey) {
 		console.log("Veuillez remplir tous les champs.");
 		return;
 	}
 
 	// chiffrer le code
-	var cryptoKey = await deriveKeyFromSecret(password);
-	var encryptedCode = await encryptValue(code, cryptoKey);
+	var cryptoKey = await deriveKeyFromSecret(encryptionKey);
+	var encryptedCode = await encryptValue(secretCode, cryptoKey);
 
 	chrome.storage.sync.set(
 		{
