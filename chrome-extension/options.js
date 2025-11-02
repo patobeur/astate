@@ -134,10 +134,7 @@ function loadFormData() {
 				}
 
 				if (items.login) {
-					document.getElementById("login").value = await decryptValue(
-						items.login,
-						cryptoKey
-					);
+					document.getElementById("login").value = items.login; // login en clair
 				}
 				if (items.code) {
 					document.getElementById("code").value = await decryptValue(
@@ -147,9 +144,9 @@ function loadFormData() {
 				}
 			} catch (e) {
 				console.log(
-					"Les données ne sont pas chiffrées, on les utilise telles quelles."
+					"Le code n'est pas chiffré, on l'utilise tel quel."
 				);
-				// si le déchiffrement échoue, c'est probablement que les données sont en clair
+				// si le déchiffrement échoue, c'est probablement que le code est en clair
 				if (items.login) {
 					document.getElementById("login").value = items.login;
 				}
@@ -180,14 +177,13 @@ async function saveFormData(e) {
 		return;
 	}
 
-	// chiffrer le login et le code
+	// chiffrer le code
 	var cryptoKey = await deriveKeyFromSecret(encryptKey);
-	var encryptedLogin = await encryptValue(login, cryptoKey);
 	var encryptedCode = await encryptValue(code, cryptoKey);
 
 	chrome.storage.sync.set(
 		{
-			login: encryptedLogin,
+			login: login, // le login reste en clair
 			code: encryptedCode,
 			encryptKey: encryptKey, // la clé reste en clair
 		},
