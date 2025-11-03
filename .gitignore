@@ -3,3 +3,4 @@ chrome-extension/manifest.json
 chrome-extension/config.js
 public/astate/changepassword.php
 public/astate/creercompte.php
+public/astate/hash.php
