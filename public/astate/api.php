@@ -89,11 +89,14 @@ if ($user && $response) {
 // 9. données à envoyer (uniquement si l'authentification a réussi)
 // en phase de testes. 
 
-if ($response) {
+include("../../private_astate/message.php");
+
+if ($user && $response) {
     $donnees = [
         "username" => $user['username'],
         "token" => $token,
-        "expires" => $expireAt
+        "expires" => $expireAt,
+        "message" => json_encode($message)
     ];
 } else {
     $donnees = [
@@ -102,9 +105,9 @@ if ($response) {
 }
 
 
-// 7. on chiffre chaque valeur
+// 10. on chiffre chaque valeur
 $donnees_chiffrees = chiffrer_array($donnees, $user_key, CIPHER);
 
-// 8. réponse
+// 11. réponse
 header('Content-Type: application/json; charset=utf-8');
 echo json_encode($donnees_chiffrees);
