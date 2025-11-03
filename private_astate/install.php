@@ -130,6 +130,21 @@ SQL;
     $pdo->exec($sqlPivot);
     ok("Table « ast_user_roles » ok.");
 
+    $sqlDevices = <<<SQL
+CREATE TABLE IF NOT EXISTS ast_user_devices (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id INT UNSIGNED NOT NULL,
+    device_id VARCHAR(255) NOT NULL UNIQUE,
+    encrypted_user_key VARCHAR(512) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_devices_user FOREIGN KEY (user_id)
+        REFERENCES ast_users(id) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SQL;
+    $pdo->exec($sqlDevices);
+    ok("Table « ast_user_devices » ok.");
+
     // --------------------------------------------
     // 3) Rôles de base
     $pdo->exec("
