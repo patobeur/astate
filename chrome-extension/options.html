@@ -1,68 +1,78 @@
 <!DOCTYPE html>
-<html lang="fr">
-
-<head>
-	<meta charset="UTF-8" />
-	<title>Astate</title>
-	<link rel="stylesheet" href="options.css" />
-</head>
-
-<body>
-	<div class="header">
-		<h1>Astate</h1>
-		<h2>Configuration</h2>
-	</div>
-
-	<div class="tab">
-		<button class="tablinks" data-tab="General">Général</button>
-		<button class="tablinks" data-tab="About">À propos</button>
-	</div>
-
-	<!-- onglet général -->
-	<div id="General" class="tabcontent">
-		<h3>Paramètres du compte</h3>
-		<form id="accountForm">
-			<label for="user_mail">Login/Email :</label>
-			<input type="text" id="user_mail" name="user_mail" required />
-
-			<label for="user_password">Mot de passe :</label>
-			<input type="password" id="user_password" name="user_password" required />
-
-			<button type="submit">Sauvegarder</button>
-		</form>
-
-		<hr />
-
-		<div id="deviceRegistration" class="hidden">
-			<h3>Enregistrer cet appareil</h3>
-			<p>
-				Pour utiliser vos identifiants sur cet appareil, vous devez
-				l'enregistrer une seule fois en fournissant votre clé secrète.
-			</p>
-			<form id="registerDeviceForm">
-				<label for="user_key_register">Clé secrète :</label>
-				<input type="password" id="user_key_register" name="user_key_register" required />
-				<button type="submit">Enregistrer l'appareil</button>
-			</form>
+<html lang="fr-FR">
+	<head
+		><meta charset="UTF-8" />
+		<title>Configuration de l'extension</title>
+		<link rel="stylesheet" type="text/css" href="options.css" />
+	</head>
+	<body>
+		<div class="tab">
+			<button class="tablinks" data-tab="General">Général</button>
+			<button class="tablinks" data-tab="Account">Compte</button>
+			<button class="tablinks" data-tab="About">À propos</button>
+			<button class="tablinks" data-tab="Tests">Tests</button>
 		</div>
 
-		<button id="showRegisterDevice">Configurer un nouvel appareil</button>
+		<div id="General" class="tabcontent active">
+			<h3>Général</h3>
+			<p>Options générales de l'extension.</p>
+		</div>
 
-		<hr />
+		<div id="About" class="tabcontent">
+			<h3>À propos</h3>
+			<p>Informations sur l'extension.</p>
+		</div>
 
-		<h3>Tester la connexion</h3>
-		<button id="btnFetch">Lancer le test</button>
-		<pre id="jsonResult"></pre>
-	</div>
+		<div id="Account" class="tabcontent">
+			<h3>Compte</h3>
+			<p><strong>Étape 1 :</strong> Entrez votre email et mot de passe. Le mot de passe n'est pas sauvegardé tant que l'appareil n'est pas enregistré.</p>
+			<form id="accountForm">
+				<label for="user_mail">Votre login :</label><br />
+				<input type="text" id="user_mail" name="user_mail" /><br /><br />
 
-	<!-- onglet à propos -->
-	<div id="About" class="tabcontent">
-		<h3>À propos de Astate</h3>
-		<p>Version 1.0</p>
-	</div>
+				<label for="user_password">Votre mot de passe :</label><br />
+				<input type="password" id="user_password" name="user_password" /><br /><br />
 
-	<script src="config.js"></script>
-	<script src="options.js"></script>
-</body>
+				<button type="submit">Sauvegarder</button>
+			</form>
 
+			<hr />
+
+			<div id="deviceRegistration" class="hidden">
+				<h3><strong>Étape 2 :</strong> Enregistrer cet appareil</h3>
+				<p>
+					Cliquez sur "Configurer" ci-dessous, puis entrez votre clé secrète pour chiffrer et sauvegarder en toute sécurité vos informations sur cet appareil.
+				</p>
+				<form id="registerDeviceForm">
+					<label for="user_key_register">Clé secrète :</label><br />
+					<input type="password" id="user_key_register" name="user_key_register" required /><br /><br />
+					<button type="submit">Enregistrer l'appareil</button>
+				</form>
+			</div>
+
+			<button id="showRegisterDevice">Configurer / Ré-enregistrer cet appareil</button>
+		</div>
+
+		<div id="Tests" class="tabcontent">
+			<h3>Tests</h3>
+			<p>Les tests à réaliser.</p
+			><button id="btnFetch">Tester le serveur</button>
+
+			<div style="margin-top: 10px">
+				<label for="jsonResult">Réponse du serveur :</label><br />
+				<pre
+					id="jsonResult"
+					style="
+						background: #111;
+						color: #0f0;
+						padding: 10px;
+						min-height: 80px;
+						white-space: pre-wrap;
+					"></pre>
+			</div>
+		</div>
+
+		<script src="config.js"></script>
+		<script src="options.js"></script>
+	</body>
 </html>

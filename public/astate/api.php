@@ -3,6 +3,14 @@ require("../../private_astate/config.php");
 include("../../private_astate/functions.php");
 include("../../private_astate/checks.php");
 
+header('Content-Type: application/json; charset=utf-8');
+
+function send_json_error($message, $code = 400) {
+    http_response_code($code);
+    echo json_encode(['error' => $message]);
+    exit;
+}
+
 // --- Connexion à la base de données ---
 try {
     $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
@@ -13,8 +21,7 @@ try {
     ];
     $pdo = new PDO($dsn, DB_USER, DB_PASSWORD, $options);
 } catch (\PDOException $e) {
-    http_response_code(500);
-    exit;
+    send_json_error("Erreur de connexion à la base de données.", 500);
 }
 
 // --- Routeur d'action ---
@@ -28,9 +35,7 @@ switch ($action) {
         handle_login($pdo);
         break;
     default:
-        http_response_code(400); // Bad Request
-        echo json_encode(['error' => 'Action non valide']);
-        exit;
+        send_json_error("Action non valide.");
 }
 
 // --- Logique pour l'enregistrement d'un appareil ---
@@ -41,19 +46,21 @@ function handle_register_device($pdo) {
     $device_id = $_POST['device_id'] ?? '';
 
     if (empty($user_mail) || empty($user_password_chiffre) || empty($user_key) || empty($device_id)) {
-        http_response_code(400);
-        exit;
+        send_json_error("Paramètres manquants pour l'enregistrement.");
     }
 
     // 1. Authentifier l'utilisateur
     $user_password_clair = dechiffrer_valeur($user_password_chiffre, $user_key, CIPHER);
+    if (!$user_password_clair) {
+        send_json_error("Impossible de déchiffrer le mot de passe. La clé secrète est-elle correcte ?", 401);
+    }
+
     $stmt = $pdo->prepare("SELECT * FROM ast_users WHERE email = ? AND is_active = 1");
     $stmt->execute([$user_mail]);
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($user_password_clair, $user['password_hash'])) {
-        http_response_code(401); // Unauthorized
-        exit;
+        send_json_error("Identifiants incorrects.", 401);
     }
 
     // 2. Chiffrer la user_key avec la MASTER_KEY
@@ -64,7 +71,7 @@ function handle_register_device($pdo) {
         $stmt = $pdo->prepare("
             INSERT INTO ast_user_devices (user_id, device_id, encrypted_user_key)
             VALUES (:user_id, :device_id, :encrypted_user_key)
-            ON DUPLICATE KEY UPDATE encrypted_user_key = :encrypted_user_key
+            ON DUPLICATE KEY UPDATE encrypted_user_key = VALUES(encrypted_user_key)
         ");
         $stmt->execute([
             ':user_id' => $user['id'],
@@ -72,8 +79,7 @@ function handle_register_device($pdo) {
             ':encrypted_user_key' => $encrypted_user_key,
         ]);
     } catch (PDOException $e) {
-        http_response_code(500);
-        exit;
+        send_json_error("Erreur lors de la sauvegarde de l'appareil.", 500);
     }
 
     echo json_encode(['status' => 'success', 'message' => 'Appareil enregistré.']);
@@ -86,8 +92,7 @@ function handle_login($pdo) {
     $device_id = $_POST['device_id'] ?? '';
 
     if (empty($user_mail) || empty($user_password_chiffre) || empty($device_id)) {
-        http_response_code(400);
-        exit;
+        send_json_error("Paramètres manquants pour la connexion.");
     }
 
     // 1. Récupérer la user_key chiffrée via le device_id
@@ -101,18 +106,16 @@ function handle_login($pdo) {
     $device = $stmt->fetch();
 
     if (!$device) {
-        http_response_code(401); // Unauthorized
-        exit;
+        send_json_error("Appareil non enregistré pour cet utilisateur.", 401);
     }
 
     // 2. Déchiffrer la user_key avec la MASTER_KEY
     $user_key = master_decrypt($device['encrypted_user_key'], CIPHER);
     if (!$user_key) {
-        http_response_code(500);
-        exit;
+        send_json_error("Erreur interne lors du déchiffrement de la clé.", 500);
     }
 
-    // 3. Le reste du processus d'authentification est identique
+    // 3. Le reste du processus d'authentification
     $user_password_clair = dechiffrer_valeur($user_password_chiffre, $user_key, CIPHER);
 
     $stmt = $pdo->prepare("SELECT * FROM ast_users WHERE email = ? AND is_active = 1");
@@ -120,8 +123,7 @@ function handle_login($pdo) {
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($user_password_clair, $user['password_hash'])) {
-        http_response_code(401);
-        exit;
+        send_json_error("Authentification échouée.", 401);
     }
 
     // Génération et stockage du token
@@ -144,6 +146,5 @@ function handle_login($pdo) {
 
     $donnees_chiffrees = chiffrer_array($donnees, $user_key, CIPHER);
 
-    header('Content-Type: application/json; charset=utf-8');
     echo json_encode($donnees_chiffrees);
 }

@@ -13,7 +13,7 @@ define('ALLOWED_ORIGIN', 'chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef');
 
 // 2. CONFIG MASTER KEY (!!! DO NOT CHANGE THIS VALUE ONCE SET !!!)
 // Used to encrypt/decrypt user keys. Must be a 32-byte string.
-define('MASTER_KEY', 'CHANGEME_32_BYTES_RANDOM_STRING_');
+define('MASTER_KEY', 'CHANGEME_32_BYTES_RANDOM_STRING!!');
 
 
 // 3. CONFIGDBDATAS
