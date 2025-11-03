@@ -3,15 +3,9 @@ require("../../private_astate/config.php");
 include("../../private_astate/functions.php");
 include("../../private_astate/checks.php");
 
+// 5. Authentification : on déchiffre le mot de passe avec la clé de chiffrement
+$motdepasse_clair = dechiffrer_valeur($code_chiffre, $password, CIPHER);
 
-
-
-// 5. Authentification : on déchiffre le code avec le mot de passe
-// et on le compare à une valeur attendue.
-$code_clair = dechiffrer_valeur($code_chiffre, $password, CIPHER);
-
-
-$DB_CHECK = false;
 // 5. Connexion à la base de données
 $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
 $options = [
@@ -21,7 +15,6 @@ $options = [
 ];
 try {
     $pdo = new PDO($dsn, DB_USER, DB_PASSWORD, $options);
-    $DB_CHECK = true;
 } catch (\PDOException $e) {
     http_response_code(404); // Bad Request
     exit;
@@ -40,27 +33,38 @@ try {
 }
 
 
-// Vérification de l'utilisateur et du mot de passe
+// 7. Vérification de l'utilisateur et du mot de passe
 $response = false;
-if ($user && $password && password_verify($password, $user['password_hash'])) {
+if ($user && $motdepasse_clair && password_verify($motdepasse_clair, $user['password_hash'])) {
     $response  = true;
 }
 
+// 8. Génération et stockage du token
+if ($user && $response) {
+    $token = bin2hex(random_bytes(32));
+    try {
+        $stmt = $pdo->prepare("UPDATE ast_users SET token = ? WHERE id = ?");
+        $stmt->execute([$token, $user['id']]);
+    } catch (\PDOException $e) {
+        send_json_error(500, 'Internal Server Error: Error updating token.');
+    }
+}
 
-// 6. données à envoyer (uniquement si l'authentification a réussi)
+// 9. données à envoyer (uniquement si l'authentification a réussi)
 // en phase de testes. 
-$donnees = [
-    // "USE_HEADER_CHECK"    => $USE_HEADER_CHECK_datas,
-    // "USE_ORIGIN_CHECK"    => $USE_ORIGIN_CHECK_datas,
-    "DB_CHECK"    => $DB_CHECK,
-    "response"    => json_encode($response),
-    "user"    => json_encode($user['username']),
-    "login" => $login,
-    "password" => $password,
-    // "code" => $code_chiffre,
-    "code" => $code_clair,
-    "expires" => date('Y-m-d H:i:s', time() + 3600)
-];
+
+if ($response) {
+    $donnees = [
+        "username" => $user['username'],
+        "token" => $token,
+        "expires" => date('Y-m-d H:i:s', time() + 3600)
+    ];
+} else {
+    $donnees = [
+        "erreur" => "erreur"
+    ];
+}
+
 
 // 7. on chiffre chaque valeur
 $donnees_chiffrees = chiffrer_array($donnees, $password, CIPHER);

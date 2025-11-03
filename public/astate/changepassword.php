@@ -47,7 +47,7 @@ try {
 
 <head>
     <meta charset="UTF-8">
-    <title>Hasher un mot de passe</title>
+    <title>Changer le mot de passe</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body {
