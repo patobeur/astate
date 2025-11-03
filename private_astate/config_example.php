@@ -11,7 +11,12 @@ define('EXPECTED_HEADER', 'ASTATE-EXT-2025-01'); // doit être le même que dans
 define('CIPHER', 'AES-256-CBC');
 define('ALLOWED_ORIGIN', 'chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef');
 
-// 2. CONFIGDBDATAS
+// 2. CONFIG MASTER KEY (!!! DO NOT CHANGE THIS VALUE ONCE SET !!!)
+// Used to encrypt/decrypt user keys. Must be a 32-byte string.
+define('MASTER_KEY', 'CHANGEME_32_BYTES_RANDOM_STRING_');
+
+
+// 3. CONFIGDBDATAS
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'asate_database');

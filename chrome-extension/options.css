@@ -38,6 +38,10 @@ body {
   border-top: none;
 }
 
+.hidden {
+	display: none;
+}
+
 .tabcontent.active {
 	display: block;
 }

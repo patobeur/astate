@@ -1,14 +1,11 @@
 // ----- gestion des onglets -----
 function openTab(tabName) {
-	// Get all elements with class="tabcontent" and hide them
 	const tabcontent = document.querySelectorAll(".tabcontent");
 	tabcontent.forEach((tab) => tab.classList.remove("active"));
 
-	// Get all elements with class="tablinks" and remove the class "active"
 	const tablinks = document.querySelectorAll(".tablinks");
 	tablinks.forEach((link) => link.classList.remove("active"));
 
-	// Show the current tab, and add an "active" class to the button that opened the tab
 	const currentTab = document.getElementById(tabName);
 	if (currentTab) {
 		currentTab.classList.add("active");
@@ -22,10 +19,31 @@ function openTab(tabName) {
 	}
 }
 
+// ----- Device ID Management -----
+async function getDeviceId() {
+	return new Promise((resolve) => {
+		chrome.storage.local.get("device_id", function (items) {
+			if (items.device_id) {
+				resolve(items.device_id);
+			} else {
+				const newDeviceId =
+					"device_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+				chrome.storage.local.set({ device_id: newDeviceId }, function () {
+					resolve(newDeviceId);
+				});
+			}
+		});
+	});
+}
+
 // ----- init au chargement -----
 document.addEventListener("DOMContentLoaded", initOptions);
 
-function initOptions() {
+async function initOptions() {
+	// Assurer qu'on a un device_id
+	const deviceId = await getDeviceId();
+	console.log("Device ID:", deviceId);
+
 	// charge les données du formulaire
 	loadFormData();
 
@@ -33,6 +51,20 @@ function initOptions() {
 	var accountForm = document.getElementById("accountForm");
 	if (accountForm) {
 		accountForm.addEventListener("submit", saveFormData);
+	}
+
+	// gestion du formulaire d'enregistrement d'appareil
+	var registerDeviceForm = document.getElementById("registerDeviceForm");
+	if (registerDeviceForm) {
+		registerDeviceForm.addEventListener("submit", registerDevice);
+	}
+
+	// gestion du bouton pour afficher le formulaire d'enregistrement
+	var showRegisterDeviceBtn = document.getElementById("showRegisterDevice");
+	if (showRegisterDeviceBtn) {
+		showRegisterDeviceBtn.addEventListener("click", function () {
+			document.getElementById("deviceRegistration").classList.remove("hidden");
+		});
 	}
 
 	// gestion des onglets
@@ -50,70 +82,8 @@ function initOptions() {
 	openTab("General");
 
 	var btnFetch = document.getElementById("btnFetch");
-	var jsonResult = document.getElementById("jsonResult");
-
-	if (btnFetch && jsonResult) {
-		btnFetch.addEventListener("click", function () {
-			jsonResult.textContent = "Chargement...";
-
-			chrome.storage.sync.get(
-				["user_mail", "user_password"],
-				function (items) {
-					var user_key = document.getElementById("user_key").value;
-					if (!items.user_password || !items.user_mail || !user_key) {
-						jsonResult.textContent =
-							"Veuillez remplir tous les champs du formulaire de compte.";
-						return;
-					}
-
-					var formData = new FormData();
-					formData.append("user_password", items.user_password);
-					formData.append("user_mail", items.user_mail);
-					formData.append("user_key", user_key);
-
-					fetch(APPURL, {
-						method: "POST",
-						body: formData,
-						headers: {
-							"X-Addon-Key": EXPECTED_HEADER, // même valeur que dans le PHP
-						},
-					})
-						.then(function (res) {
-							if (!res.ok) {
-								throw new Error("Erreur HTTP : " + res.status);
-							}
-							return res.json();
-						})
-						.then(async function (data) {
-							// ici data = { user: "base64...", role: "base64...", ... }
-
-							var cryptoKey = await deriveKeyFromSecret(user_key);
-
-							var dechiffre = {};
-							for (var k in data) {
-								if (data.hasOwnProperty(k)) {
-									dechiffre[k] = await decryptValue(
-										data[k],
-										cryptoKey
-									);
-								}
-							}
-
-							// afficher le résultat clair
-							jsonResult.textContent = JSON.stringify(
-								dechiffre,
-								null,
-								2
-							);
-						})
-						.catch(function (err) {
-							jsonResult.textContent =
-								"Erreur json : " + err.name + " - " + err.message;
-							console.error(err);
-						});
-				}
-			);
-		});
+	if (btnFetch) {
+		btnFetch.addEventListener("click", testLogin);
 	}
 }
 
@@ -121,47 +91,13 @@ function initOptions() {
  * charge les données depuis chrome.storage et remplit le formulaire
  */
 function loadFormData() {
-	chrome.storage.sync.get(
-		["user_mail", "user_password"],
-		async function (items) {
-			try {
-				var user_key = document.getElementById("user_key").value;
-				if (user_key) {
-					var cryptoKey = await deriveKeyFromSecret(user_key);
-				} else {
-					// s'il n'y a pas de mot de passe entré, on ne peut rien déchiffrer
-					// on remplit juste le login qui est en clair
-					if (items.user_mail) {
-						document.getElementById("user_mail").value = items.user_mail;
-					}
-					return;
-				}
-
-				if (items.user_mail) {
-					document.getElementById("user_mail").value = items.user_mail; // login en clair
-				}
-				if (items.user_password) {
-					document.getElementById("user_password").value =
-						await decryptValue(items.user_password, cryptoKey);
-				}
-			} catch (e) {
-				console.log("Le code n'est pas chiffré, on l'utilise tel quel.");
-				// si le déchiffrement échoue, c'est probablement que le code est en clair
-				if (items.user_mail) {
-					document.getElementById("user_mail").value = items.user_mail;
-				}
-				if (items.user_password) {
-					document.getElementById("user_password").value =
-						items.user_password;
-				}
-			}
+	chrome.storage.sync.get(["user_mail"], function (items) {
+		if (items.user_mail) {
+			document.getElementById("user_mail").value = items.user_mail;
 		}
-	);
+		// On ne peut plus déchiffrer le mot de passe ici car on n'a pas la clé.
+	});
 }
-
-// ATTENTION: Si vous utilisez les données 'login' ou 'code' dans d'autres
-// parties de l'extension, vous devrez implémenter la même logique de
-// déchiffrement en utilisant la clé 'encryptKey' et la fonction decryptValue.
 
 /**
  * sauvegarde les données du formulaire dans chrome.storage
@@ -171,106 +107,155 @@ async function saveFormData(e) {
 
 	var user_mail = document.getElementById("user_mail").value;
 	var user_password = document.getElementById("user_password").value;
-	var user_key = document.getElementById("user_key").value;
 
-	if (!user_mail || !user_password || !user_key) {
-		console.log("Veuillez remplir tous les champs.");
+	if (!user_mail || !user_password) {
+		console.log("Veuillez remplir email et mot de passe.");
 		return;
 	}
 
-	// chiffrer le mot de passe avec la clé secrète
-	var cryptoKey = await deriveKeyFromSecret(user_key);
-	var encryptedPassword = await encryptValue(user_password, cryptoKey);
-
 	chrome.storage.sync.set(
 		{
-			user_mail: user_mail, // le login reste en clair
-			user_password: encryptedPassword,
+			user_mail: user_mail,
+			// Le mot de passe sera chiffré lors de l'enregistrement de l'appareil
+			user_password: user_password, // Stocké temporairement en clair
 		},
 		function () {
-			console.log("Données chiffrées et sauvegardées.");
+			console.log("Données de base sauvegardées. Pensez à enregistrer l'appareil.");
+			alert("Données sauvegardées. Si c'est un nouvel appareil ou un nouveau mot de passe, n'oubliez pas d'enregistrer l'appareil.");
 		}
 	);
 }
 
-/**
- * dérive la clé à partir du secret texte
- * => même chose que: hash('sha256', $key, true) en PHP
- */
+
+async function registerDevice(e) {
+	e.preventDefault();
+
+	const user_mail = document.getElementById("user_mail").value;
+	const user_password = document.getElementById("user_password").value;
+	const user_key = document.getElementById("user_key_register").value;
+	const deviceId = await getDeviceId();
+
+	if (!user_mail || !user_password || !user_key) {
+		alert("Veuillez remplir tous les champs : email, mot de passe et clé secrète.");
+		return;
+	}
+
+	// Chiffrer le mot de passe avec la clé secrète avant de l'envoyer
+	const cryptoKey = await deriveKeyFromSecret(user_key);
+	const encryptedPassword = await encryptValue(user_password, cryptoKey);
+
+	// Sauvegarder le mot de passe chiffré pour les futurs logins
+	chrome.storage.sync.set({ user_password: encryptedPassword });
+
+	const formData = new FormData();
+	formData.append("action", "register_device");
+	formData.append("user_mail", user_mail);
+	formData.append("user_password", encryptedPassword);
+	formData.append("user_key", user_key);
+	formData.append("device_id", deviceId);
+
+	fetch(APPURL, {
+		method: "POST",
+		body: formData,
+		headers: { "X-Addon-Key": EXPECTED_HEADER },
+	})
+		.then(function (res) {
+			if (!res.ok) {
+				throw new Error("Erreur HTTP : " + res.status);
+			}
+			return res.json();
+		})
+		.then(function (data) {
+			console.log(data);
+			alert("Appareil enregistré avec succès !");
+			document.getElementById("deviceRegistration").classList.add("hidden");
+		})
+		.catch(function (err) {
+			console.error(err);
+			alert("Erreur lors de l'enregistrement de l'appareil.");
+		});
+}
+
+
+async function testLogin() {
+	const jsonResult = document.getElementById("jsonResult");
+	jsonResult.textContent = "Chargement...";
+
+	const deviceId = await getDeviceId();
+
+	chrome.storage.sync.get(["user_mail", "user_password"], function (items) {
+		if (!items.user_mail || !items.user_password) {
+			jsonResult.textContent = "Veuillez d'abord sauvegarder vos informations de compte.";
+			return;
+		}
+
+		const formData = new FormData();
+		formData.append("action", "login");
+		formData.append("user_mail", items.user_mail);
+		formData.append("user_password", items.user_password); // déjà chiffré
+		formData.append("device_id", deviceId);
+
+		fetch(APPURL, {
+			method: "POST",
+			body: formData,
+			headers: { "X-Addon-Key": EXPECTED_HEADER },
+		})
+			.then(res => res.json())
+			.then(data => {
+				// NOTE : La réponse `data` est chiffrée. Pour la déchiffrer ici,
+				// il faudrait demander la user_key à l'utilisateur, ce qui va à l'encontre
+				// de l'objectif. Le test de connexion se contente donc de vérifier
+				// que la requête réussit et renvoie des données.
+				jsonResult.textContent = "Réponse chiffrée reçue du serveur :\n" + JSON.stringify(data, null, 2);
+			})
+			.catch(err => {
+				jsonResult.textContent = "Erreur : " + err.message;
+				console.error(err);
+			});
+	});
+}
+
+// ----- Fonctions de chiffrement (inchangées) -----
+
 async function deriveKeyFromSecret(secret) {
-	var enc = new TextEncoder();
-	var secretBytes = enc.encode(secret);
-
-	// SHA-256 du secret
-	var hash = await crypto.subtle.digest("SHA-256", secretBytes);
-
-	// on importe cette clé pour AES-CBC
+	const enc = new TextEncoder();
+	const secretBytes = enc.encode(secret);
+	const hash = await crypto.subtle.digest("SHA-256", secretBytes);
 	return crypto.subtle.importKey("raw", hash, { name: "AES-CBC" }, false, [
 		"encrypt",
 		"decrypt",
 	]);
 }
 
-/**
- * chiffre une valeur pour la stocker
- * le format de sortie est : base64( iv(16) + ciphertext )
- */
 async function encryptValue(str, cryptoKey) {
-	// 1. string -> bytes
-	var enc = new TextEncoder();
-	var plainBytes = enc.encode(str);
-
-	// 2. générer un IV aléatoire
-	var iv = crypto.getRandomValues(new Uint8Array(16));
-
-	// 3. chiffrer
-	var encrypted = await crypto.subtle.encrypt(
-		{
-			name: "AES-CBC",
-			iv: iv,
-		},
+	const enc = new TextEncoder();
+	const plainBytes = enc.encode(str);
+	const iv = crypto.getRandomValues(new Uint8Array(16));
+	const encrypted = await crypto.subtle.encrypt(
+		{ name: "AES-CBC", iv: iv },
 		cryptoKey,
 		plainBytes
 	);
-
-	// 4. concaténer IV + ciphertext
-	var resultBytes = new Uint8Array(iv.length + encrypted.byteLength);
+	const resultBytes = new Uint8Array(iv.length + encrypted.byteLength);
 	resultBytes.set(iv, 0);
 	resultBytes.set(new Uint8Array(encrypted), iv.length);
-
-	// 5. bytes -> base64
-	var base64 = btoa(String.fromCharCode.apply(null, resultBytes));
-	return base64;
+	return btoa(String.fromCharCode.apply(null, resultBytes));
 }
 
-/**
- * déchiffre une valeur envoyée par le PHP
- * le format est : base64( iv(16) + ciphertext )
- */
 async function decryptValue(base64Data, cryptoKey) {
-	// 1. base64 -> bytes
-	var raw = atob(base64Data);
-	var rawLen = raw.length;
-	var rawBytes = new Uint8Array(rawLen);
-	for (var i = 0; i < rawLen; i++) {
+	const raw = atob(base64Data);
+	const rawLen = raw.length;
+	const rawBytes = new Uint8Array(rawLen);
+	for (let i = 0; i < rawLen; i++) {
 		rawBytes[i] = raw.charCodeAt(i);
 	}
-
-	// 2. séparer IV (16 octets) et ciphertext
-	var iv = rawBytes.slice(0, 16);
-	var ciphertext = rawBytes.slice(16);
-
-	// 3. déchiffrer
-	var decrypted = await crypto.subtle.decrypt(
-		{
-			name: "AES-CBC",
-			iv: iv,
-		},
+	const iv = rawBytes.slice(0, 16);
+	const ciphertext = rawBytes.slice(16);
+	const decrypted = await crypto.subtle.decrypt(
+		{ name: "AES-CBC", iv: iv },
 		cryptoKey,
 		ciphertext
 	);
-
-	// 4. bytes -> string
-	var dec = new TextDecoder();
+	const dec = new TextDecoder();
 	return dec.decode(decrypted);
 }

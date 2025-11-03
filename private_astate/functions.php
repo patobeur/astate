@@ -35,3 +35,30 @@ function chiffrer_array(array $donnees, $password, $CIPHER)
     }
     return $donnees_chiffrees;
 }
+
+// --- Fonctions pour le chiffrement/déchiffrement avec la MASTER_KEY ---
+
+/**
+ * Chiffre une valeur avec la MASTER_KEY.
+ */
+function master_encrypt(string $value, string $cipher): string
+{
+    $ivlen = openssl_cipher_iv_length($cipher);
+    $iv = openssl_random_pseudo_bytes($ivlen);
+    $encrypted = openssl_encrypt($value, $cipher, MASTER_KEY, OPENSSL_RAW_DATA, $iv);
+
+    return base64_encode($iv . $encrypted);
+}
+
+/**
+ * Déchiffre une valeur avec la MASTER_KEY.
+ */
+function master_decrypt(string $base64, string $cipher): string|false
+{
+    $data = base64_decode($base64);
+    $ivlen = openssl_cipher_iv_length($cipher);
+    $iv = substr($data, 0, $ivlen);
+    $encrypted = substr($data, $ivlen);
+
+    return openssl_decrypt($encrypted, $cipher, MASTER_KEY, OPENSSL_RAW_DATA, $iv);
+}

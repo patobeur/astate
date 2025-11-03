@@ -1,68 +1,68 @@
 <!DOCTYPE html>
-<html lang="fr-FR">
-	<head
-		><meta charset="UTF-8" />
-		<title>Configuration de l'extension</title>
-		<link rel="stylesheet" type="text/css" href="options.css" />
-	</head>
-	<body>
-		<div class="tab">
-			<button class="tablinks" data-tab="General">Général</button>
-			<button class="tablinks" data-tab="Account">Compte</button>
-			<button class="tablinks" data-tab="About">À propos</button>
-			<button class="tablinks" data-tab="Tests">Tests</button>
-		</div>
+<html lang="fr">
 
-		<div id="General" class="tabcontent active">
-			<h3>Général</h3>
-			<p>Options générales de l'extension.</p>
-		</div>
+<head>
+	<meta charset="UTF-8" />
+	<title>Astate</title>
+	<link rel="stylesheet" href="options.css" />
+</head>
 
-		<div id="About" class="tabcontent">
-			<h3>À propos</h3>
-			<p>Informations sur l'extension.</p>
-		</div>
+<body>
+	<div class="header">
+		<h1>Astate</h1>
+		<h2>Configuration</h2>
+	</div>
 
-		<div id="Account" class="tabcontent">
-			<h3>Compte</h3>
-			<p>Informations pour se connecter.</p>
-			<form id="accountForm">
-				<label for="user_mail">Votre login :</label><br />
-				<input type="text" id="user_mail" name="user_mail" /><br /><br />
+	<div class="tab">
+		<button class="tablinks" data-tab="General">Général</button>
+		<button class="tablinks" data-tab="About">À propos</button>
+	</div>
 
-				<label for="user_password">Votre password :</label><br />
-				<input
-					type="password"
-					id="user_password"
-					name="user_password" /><br /><br />
+	<!-- onglet général -->
+	<div id="General" class="tabcontent">
+		<h3>Paramètres du compte</h3>
+		<form id="accountForm">
+			<label for="user_mail">Login/Email :</label>
+			<input type="text" id="user_mail" name="user_mail" required />
 
-				<label for="user_key">Votre clé de chiffrement :</label><br />
-				<input type="password" id="user_key" name="user_key" /><br /><br />
+			<label for="user_password">Mot de passe :</label>
+			<input type="password" id="user_password" name="user_password" required />
 
-				<button type="submit">Sauvegarder</button>
+			<button type="submit">Sauvegarder</button>
+		</form>
+
+		<hr />
+
+		<div id="deviceRegistration" class="hidden">
+			<h3>Enregistrer cet appareil</h3>
+			<p>
+				Pour utiliser vos identifiants sur cet appareil, vous devez
+				l'enregistrer une seule fois en fournissant votre clé secrète.
+			</p>
+			<form id="registerDeviceForm">
+				<label for="user_key_register">Clé secrète :</label>
+				<input type="password" id="user_key_register" name="user_key_register" required />
+				<button type="submit">Enregistrer l'appareil</button>
 			</form>
 		</div>
 
-		<div id="Tests" class="tabcontent">
-			<h3>Tests</h3>
-			<p>Les tests à réaliser.</p
-			><button id="btnFetch">Tester le serveur</button>
+		<button id="showRegisterDevice">Configurer un nouvel appareil</button>
 
-			<div style="margin-top: 10px">
-				<label for="jsonResult">Réponse du serveur :</label><br />
-				<pre
-					id="jsonResult"
-					style="
-						background: #111;
-						color: #0f0;
-						padding: 10px;
-						min-height: 80px;
-						white-space: pre-wrap;
-					"></pre>
-			</div>
-		</div>
+		<hr />
 
-		<script src="config.js"></script>
-		<script src="options.js"></script>
-	</body>
+		<h3>Tester la connexion</h3>
+		<button id="btnFetch">Lancer le test</button>
+		<pre id="jsonResult"></pre>
+	</div>
+
+	<!-- onglet à propos -->
+	<div id="About" class="tabcontent">
+		<h3>À propos de Astate</h3>
+		<p>Version 1.0</p>
+	</div>
+
+	<script src="config.js"></script>
+	<script src="options.js"></script>
+</body>
+
 </html>
