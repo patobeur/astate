@@ -1,4 +1,4 @@
-# install manuelle
+# installation manuelle
 
 ```bash
 -- utiliser la base
@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS ast_users (
     token VARCHAR(255),
     role VARCHAR(50) DEFAULT 'user',
     is_active TINYINT(1) DEFAULT 1,
+    expire_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
