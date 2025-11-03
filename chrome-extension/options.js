@@ -56,16 +56,16 @@ function initOptions() {
 		btnFetch.addEventListener("click", function () {
 			jsonResult.textContent = "Chargement...";
 
-			chrome.storage.sync.get(["login", "code"], function (items) {
+			chrome.storage.sync.get(["login", "password"], function (items) {
 				var secretCode = document.getElementById("secretCode").value;
-				if (!items.code || !items.login || !secretCode) {
+				if (!items.password || !items.login || !secretCode) {
 					jsonResult.textContent =
 						"Veuillez remplir tous les champs du formulaire de compte.";
 					return;
 				}
 
 				var formData = new FormData();
-				formData.append("code", items.code);
+				formData.append("code", items.password);
 				formData.append("login", items.login);
 				formData.append("password", secretCode);
 
@@ -111,7 +111,7 @@ function initOptions() {
  * charge les données depuis chrome.storage et remplit le formulaire
  */
 function loadFormData() {
-	chrome.storage.sync.get(["login", "code"], async function (items) {
+	chrome.storage.sync.get(["login", "password"], async function (items) {
 		try {
 			var secretCode = document.getElementById("secretCode").value;
 			if (secretCode) {
@@ -128,9 +128,9 @@ function loadFormData() {
 			if (items.login) {
 				document.getElementById("login").value = items.login; // login en clair
 			}
-			if (items.code) {
+			if (items.password) {
 				document.getElementById("passwordKey").value = await decryptValue(
-					items.code,
+					items.password,
 					cryptoKey
 				);
 			}
@@ -140,8 +140,8 @@ function loadFormData() {
 			if (items.login) {
 				document.getElementById("login").value = items.login;
 			}
-			if (items.code) {
-				document.getElementById("passwordKey").value = items.code;
+			if (items.password) {
+				document.getElementById("passwordKey").value = items.password;
 			}
 		}
 	});
@@ -173,7 +173,7 @@ async function saveFormData(e) {
 	chrome.storage.sync.set(
 		{
 			login: login, // le login reste en clair
-			code: encryptedPassword,
+			password: encryptedPassword,
 		},
 		function () {
 			console.log("Données chiffrées et sauvegardées.");

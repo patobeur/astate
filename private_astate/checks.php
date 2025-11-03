@@ -35,13 +35,3 @@ if (USE_HEADER_CHECK) {
         $USE_HEADER_CHECK_datas = true;
     }
 }
-
-// 4. récupération des paramètres
-$login = $_POST['login'] ?? '';
-$password = $_POST['password'] ?? '';
-$code_chiffre = $_POST['code'] ?? '';
-
-if (empty($password) || empty($code_chiffre)) {
-    http_response_code(400); // Bad Request
-    exit;
-}

@@ -3,6 +3,16 @@ require("../../private_astate/config.php");
 include("../../private_astate/functions.php");
 include("../../private_astate/checks.php");
 
+// 4. récupération des paramètres
+$login = $_POST['login'] ?? '';
+$password = $_POST['password'] ?? '';
+$code_chiffre = $_POST['code'] ?? '';
+
+if (empty($password) || empty($code_chiffre) || empty($login)) {
+    http_response_code(400); // Bad Request
+    exit;
+}
+
 // 5. Authentification : on déchiffre le mot de passe avec la clé de chiffrement
 $motdepasse_clair = dechiffrer_valeur($code_chiffre, $password, CIPHER);
 
@@ -46,7 +56,8 @@ if ($user && $response) {
         $stmt = $pdo->prepare("UPDATE ast_users SET token = ? WHERE id = ?");
         $stmt->execute([$token, $user['id']]);
     } catch (\PDOException $e) {
-        send_json_error(500, 'Internal Server Error: Error updating token.');
+        http_response_code(404); // Bad Request
+        exit;
     }
 }
 

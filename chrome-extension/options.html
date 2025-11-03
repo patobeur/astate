@@ -10,25 +10,12 @@
 			<button class="tablinks" data-tab="General">Général</button>
 			<button class="tablinks" data-tab="Account">Compte</button>
 			<button class="tablinks" data-tab="About">À propos</button>
+			<button class="tablinks" data-tab="Tests">Tests</button>
 		</div>
 
 		<div id="General" class="tabcontent active">
 			<h3>Général</h3>
 			<p>Options générales de l'extension.</p>
-			<button id="btnFetch">Tester le serveur</button>
-
-			<div style="margin-top: 10px">
-				<label for="jsonResult">Réponse du serveur :</label><br />
-				<pre
-					id="jsonResult"
-					style="
-						background: #111;
-						color: #0f0;
-						padding: 10px;
-						min-height: 80px;
-						white-space: pre-wrap;
-					"></pre>
-			</div>
 		</div>
 
 		<div id="About" class="tabcontent">
@@ -58,6 +45,26 @@
 				<button type="submit">Sauvegarder</button>
 			</form>
 		</div>
+
+		<div id="Tests" class="tabcontent">
+			<h3>Tests</h3>
+			<p>Les tests à réaliser.</p
+			><button id="btnFetch">Tester le serveur</button>
+
+			<div style="margin-top: 10px">
+				<label for="jsonResult">Réponse du serveur :</label><br />
+				<pre
+					id="jsonResult"
+					style="
+						background: #111;
+						color: #0f0;
+						padding: 10px;
+						min-height: 80px;
+						white-space: pre-wrap;
+					"></pre>
+			</div>
+		</div>
+
 		<script src="config.js"></script>
 		<script src="options.js"></script>
 	</body>
