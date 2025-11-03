@@ -1,8 +1,10 @@
 # installation manuelle
 
+_Le champ `email` est utilisé comme identifiant de connexion par l'extension._
+
 ```bash
 -- Utiliser la base
-USE asate_database;
+USE astate_database;
 
 -- Table utilisateurs
 CREATE TABLE IF NOT EXISTS ast_users (
@@ -50,4 +52,19 @@ INSERT IGNORE INTO ast_roles (name, display_name) VALUES
 ('agent', 'Agent'),
 ('admin', 'Administrateur'),
 ('sysadmin', 'Super Administrateur');
+```
+
+```bash
+-- Création du user
+INSERT INTO ast_users (username, email, password_hash, token, is_active)
+VALUES ('Patobeur', 'patobeur@astate.pat', password_hash("VOTRE_MOT_DE_PASSE",PASSWORD_DEFAULT), NULL, 1);
+```
+
+```bash
+-- Attribution du rôle admin (idempotent)
+INSERT IGNORE INTO ast_user_roles (user_id, role_id)
+SELECT u.id, r.id
+FROM ast_users u
+JOIN ast_roles r ON r.name = 'admin'
+WHERE u.email = 'patobeur@astate.pat';
 ```

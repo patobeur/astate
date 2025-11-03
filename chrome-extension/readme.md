@@ -20,13 +20,14 @@ Les paramètres de l'utilisateur sont stockés en utilisant l'API `chrome.storag
 
 Les données stockées sont :
 
--  `login`: L'identifiant de l'utilisateur (email), stocké en clair.
--  `code`: Le mot de passe ou code secret, stocké sous forme **chiffrée**.
--  `encryptKey`: La clé secrète fournie par l'utilisateur, utilisée pour chiffrer et déchiffrer le `code`. Elle est stockée en clair.
+-  `user_mail`: L'identifiant de l'utilisateur (email), stocké en clair.
+-  `user_password`: Le mot de passe ou code secret, stocké sous forme **chiffrée**.
+-  `user_key`: La clé secrète fournie par l'utilisateur, utilisée pour chiffrer et déchiffrer le `user_password`. Elle n'est pas stockée.
 
 ## Sécurité
 
--  **Chiffrement**: Pour des raisons de sécurité, le champ `code` n'est pas stocké en clair. Il est chiffré côté client dans `options.js` en utilisant l'API Web Crypto (`AES-256-CBC`) avant d'être sauvegardé. La clé de dérivation est un hash SHA-256 de la `encryptKey` fournie par l'utilisateur.
+-  **Chiffrement**: Pour des raisons de sécurité, le champ `user_password` n'est pas stocké en clair. Il est chiffré côté client dans `options.js` en utilisant l'API Web Crypto (`AES-256-CBC`) avant d'être sauvegardé. La clé de dérivation est un hash SHA-256 de la `user_key` fournie par l'utilisateur.
+
 -  **Politique de Sécurité de Contenu (CSP)**: En raison du Manifest V3, les scripts en ligne (ex: `onclick="..."`) sont interdits. Toute la logique JavaScript est gérée via des écouteurs d'événements (`addEventListener`) dans le fichier `options.js`.
 
 ## Installation en Mode Développeur
